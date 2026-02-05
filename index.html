@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Schach mit Chat & Bots</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --success: #27ae60;
+            --board-light: #f0d9b5;
+            --board-dark: #b58863;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 400px 400px;
+            grid-template-rows: auto 1fr;
+            gap: 20px;
+        }
+        
+        header {
+            grid-column: 1 / -1;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        h1 {
+            color: var(--primary);
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        h1 i {
+            color: var(--accent);
+        }
+        
+        .subtitle {
+            color: var(--secondary);
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+        
+        .game-area {
+            grid-column: 1 / 2;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .controls {
+            grid-column: 2 / 3;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .chat-area {
+            grid-column: 3 / 4;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #chessBoard {
+            width: 100%;
+            max-width: 600px;
+            height: 600px;
+            margin: 0 auto;
+            border: 3px solid var(--dark);
+            border-radius: 8px;
+            background: var(--board-light);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .row {
+            display: flex;
+            height: 12.5%;
+        }
+        
+        .square {
+            width: 12.5%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+            font-size: 45px;
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+        
+        .square:hover {
+            filter: brightness(1.1);
+        }
+        
+        .light {
+            background-color: var(--board-light);
+        }
+        
+        .dark {
+            background-color: var(--board-dark);
+        }
+        
+        .selected {
+            background-color: rgba(52, 152, 219, 0.7) !important;
+        }
+        
+        .possible-move {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: rgba(39, 174, 96, 0.5);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid var(--success);
+        }
+        
+        .piece {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.3s;
+        }
+        
+        .piece:hover {
+            transform: scale(1.1);
+        }
+        
+        .control-group {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+        
+        h2 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        h2 i {
+            color: var(--secondary);
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        select, button, input {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 2px solid #ddd;
+            font-size: 16px;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+        }
+        
+        select:focus, input:focus {
+            border-color: var(--secondary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        select {
+            background: white;
+            cursor: pointer;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, var(--secondary) 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 14px rgba(52, 152, 219, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(-1px);
+        }
+        
+        button#resetBtn {
+            background: linear-gradient(135deg, var(--accent) 0%, #c0392b 100%);
+        }
+        
+        button#resetBtn:hover {
+            box-shadow: 0 7px 14px rgba(231, 76, 60, 0.3);
+        }
+        
+        .status {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        #gameStatus {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        #moveHistory {
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            border: 2px solid #eee;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .move-entry {
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .move-entry:nth-child(odd) {
+            background: #f8f9fa;
+        }
+        
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        #chatMessages {
+            flex: 1;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 2px solid #eee;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .message {
+            padding: 12px 15px;
+            border-radius: 10px;
+            max-width: 85%;
+            word-wrap: break-word;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .user-message {
+            background: var(--secondary);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+        
+        .system-message {
+            background: #e0e0e0;
+            color: #333;
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+        
+        .bot-message {
+            background: #27ae60;
+            color: white;
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+        
+        .chat-input-area {
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+        }
+        
+        #chatInput {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        
+        #sendBtn {
+            width: auto;
+            padding: 12px 25px;
+            margin-bottom: 0;
+        }
+        
+        .player-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .player {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .player-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .player-white .player-icon {
+            background: white;
+            color: black;
+            border: 2px solid #333;
+        }
+        
+        .player-black .player-icon {
+            background: #333;
+            color: white;
+        }
+        
+        .player-name {
+            font-weight: bold;
+        }
+        
+        .turn-indicator {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .online-count {
+            background: var(--primary);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .room-code {
+            background: var(--success);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+        }
+        
+        footer {
+            grid-column: 1 / -1;
+            text-align: center;
+            color: white;
+            margin-top: 20px;
+            padding: 20px;
+            opacity: 0.8;
+        }
+        
+        @media (max-width: 1400px) {
+            .container {
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: auto 1fr auto;
+            }
+            
+            .game-area {
+                grid-column: 1 / -1;
+                grid-row: 2 / 3;
+            }
+            
+            .controls {
+                grid-column: 1 / 2;
+                grid-row: 3 / 4;
+            }
+            
+            .chat-area {
+                grid-column: 2 / 3;
+                grid-row: 3 / 4;
+            }
+            
+            #chessBoard {
+                height: 500px;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .game-area, .controls, .chat-area {
+                grid-column: 1 / -1;
+            }
+            
+            .controls {
+                grid-row: 3 / 4;
+            }
+            
+            .chat-area {
+                grid-row: 4 / 5;
+            }
+            
+            #chessBoard {
+                height: 400px;
+                max-width: 400px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            #chessBoard {
+                height: 350px;
+            }
+            
+            .square {
+                font-size: 35px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-chess"></i> Online Schach Arena <i class="fas fa-chess"></i></h1>
+            <p class="subtitle">Spiele gegen Bots oder chatte mit anderen Spielern</p>
+        </header>
+        
+        <div class="game-area">
+            <div class="player-info">
+                <div class="player player-white">
+                    <div class="player-icon">W</div>
+                    <div>
+                        <div class="player-name" id="whitePlayer">Du (Weiß)</div>
+                        <div id="whiteTime">--:--</div>
+                    </div>
+                    <div class="turn-indicator" id="whiteTurn"></div>
+                </div>
+                
+                <div class="player player-black">
+                    <div class="player-icon">B</div>
+                    <div>
+                        <div class="player-name" id="blackPlayer">Bot (Schwarz)</div>
+                        <div id="blackTime">--:--</div>
+                    </div>
+                    <div class="turn-indicator" id="blackTurn"></div>
+                </div>
+            </div>
+            
+            <div id="chessBoard">
+                <!-- Schachbrett wird mit JavaScript erstellt -->
+            </div>
+            
+            <div class="room-code">
+                Raumcode: <span id="roomCode">CHESS-1234</span>
+                <div style="font-size: 0.8rem; margin-top: 5px;">Teile diesen Code mit Freunden!</div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <h2><i class="fas fa-robot"></i> Bot-Einstellungen</h2>
+                <label for="botLevel"><i class="fas fa-brain"></i> Bot-Stärke:</label>
+                <select id="botLevel">
+                    <option value="1">🤖 Anfänger (Stufe 1)</option>
+                    <option value="2" selected>🎯 Leicht (Stufe 2)</option>
+                    <option value="3">⚔️ Mittel (Stufe 3)</option>
+                    <option value="4">🧠 Schwer (Stufe 4)</option>
+                    <option value="5">🏆 Experte (Stufe 5)</option>
+                </select>
+                
+                <label for="playerColor"><i class="fas fa-palette"></i> Deine Farbe:</label>
+                <select id="playerColor">
+                    <option value="white" selected>⚪ Weiß (du beginnst)</option>
+                    <option value="black">⚫ Schwarz (Bot beginnt)</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <h2><i class="fas fa-gamepad"></i> Spielsteuerung</h2>
+                <div class="btn-group">
+                    <button id="newGameBtn"><i class="fas fa-play"></i> Neues Spiel</button>
+                    <button id="resetBtn"><i class="fas fa-redo"></i> Zurücksetzen</button>
+                </div>
+                <button id="flipBoardBtn"><i class="fas fa-sync-alt"></i> Brett drehen</button>
+                <button id="inviteBtn"><i class="fas fa-user-plus"></i> Freund einladen</button>
+            </div>
+            
+            <div class="status">
+                <h2><i class="fas fa-info-circle"></i> Spielstatus</h2>
+                <div id="gameStatus"><i class="fas fa-hourglass-start"></i> Spiel wird vorbereitet...</div>
+                <div id="moveHistory"></div>
+            </div>
+        </div>
+        
+        <div class="chat-area">
+            <div class="chat-container">
+                <h2><i class="fas fa-comments"></i> Chat <span class="online-count"><i class="fas fa-user"></i> <span id="onlineCount">1</span> online</span></h2>
+                
+                <div id="chatMessages">
+                    <div class="message system-message">
+                        <strong>System:</strong> Willkommen im Schach-Chat! Du spielst gegen den Bot.
+                    </div>
+                    <div class="message bot-message">
+                        <strong>Bot:</strong> Hallo! Ich bin bereit für eine Partie Schach. Wähle meine Stärke und lass uns spielen!
+                    </div>
+                </div>
+                
+                <div class="chat-input-area">
+                    <input type="text" id="chatInput" placeholder="Nachricht eingeben... (Enter zum Senden)">
+                    <button id="sendBtn"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Online Schach mit Chat | Entwickelt mit HTML, CSS & JavaScript | Spiel gegen Bots oder chatte mit anderen</p>
+        </footer>
+    </div>
+
+    <script>
+        // Unicode-Schachfiguren mit besseren Symbolen
+        const PIECES = {
+            'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚', 'p': '♟',
+            'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔', 'P': '♙'
+        };
+        
+        // Startaufstellung
+        const START_POSITION = [
+            ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+            ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+            ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+        ];
+        
+        // Bot-Stufen Beschreibungen
+        const BOT_DESCRIPTIONS = {
+            1: "🤖 Anfänger: Macht zufällige Züge, leicht zu schlagen.",
+            2: "🎯 Leicht: Einfache Taktiken, gute Übung für Anfänger.",
+            3: "⚔️ Mittel: Kennt grundlegende Strategien, faire Herausforderung.",
+            4: "🧠 Schwer: Starker Gegner, verwendet taktische Motive.",
+            5: "🏆 Experte: Sehr stark, denkt mehrere Züge voraus."
+        };
+        
+        // Globale Variablen
+        let board = [];
+        let currentPlayer = 'white';
+        let selectedSquare = null;
+        let possibleMoves = [];
+        let gameHistory = [];
+        let moveNotationHistory = [];
+        let botLevel = 2;
+        let playerColor = 'white';
+        let isFlipped = false;
+        let gameOver = false;
+        let whiteTime = 600; // 10 Minuten in Sekunden
+        let blackTime = 600;
+        let timerInterval = null;
+        let chatMessages = [];
+        let onlineCount = 1;
+        let playerName = "Spieler";
+        let roomCode = "CHESS-" + Math.floor(1000 + Math.random() * 9000);
+        
+        // Initialisierung
+        function initGame() {
+            console.log("Initialisiere Online Schachspiel...");
+            createBoard();
+            setupBoard();
+            setupEventListeners();
+            updateGameStatus();
+            updatePlayerDisplay();
+            updateRoomCode();
+            
+            // Starte den Timer
+            startTimer();
+            
+            // Wenn Spieler Schwarz ist, beginnt der Bot
+            if (playerColor === 'black') {
+                setTimeout(makeBotMove, 1000);
+            }
+            
+            // Simuliere Online-Status
+            simulateOnlineActivity();
+        }
+        
+        // Schachbrett erstellen
+        function createBoard() {
+            const boardElement = document.getElementById('chessBoard');
+            boardElement.innerHTML = '';
+            
+            for (let row = 0; row < 8; row++) {
+                const rowElement = document.createElement('div');
+                rowElement.className = 'row';
+                rowElement.dataset.row = row;
+                
+                for (let col = 0; col < 8; col++) {
+                    const square = document.createElement('div');
+                    const squareId = `${String.fromCharCode(97 + col)}${8 - row}`;
+                    square.id = squareId;
+                    square.dataset.row = row;
+                    square.dataset.col = col;
+                    square.className = (row + col) % 2 === 0 ? 'square dark' : 'square light';
+                    
+                    square.addEventListener('click', () => handleSquareClick(squareId, row, col));
+                    rowElement.appendChild(square);
+                }
+                
+                boardElement.appendChild(rowElement);
+            }
+        }
+        
+        // Brett mit Startposition füllen
+        function setupBoard() {
+            board = JSON.parse(JSON.stringify(START_POSITION));
+            updateBoardDisplay();
+        }
+        
+        // Brettanzeige aktualisieren
+        function updateBoardDisplay() {
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const squareId = `${String.fromCharCode(97 + col)}${8 - row}`;
+                    const squareElement = document.getElementById(squareId);
+                    const piece = board[row][col];
+                    
+                    // Alten Inhalt löschen
+                    squareElement.innerHTML = '';
+                    
+                    // Figur hinzufügen, falls vorhanden
+                    if (piece) {
+                        const pieceElement = document.createElement('div');
+                        pieceElement.className = 'piece';
+                        pieceElement.textContent = PIECES[piece];
+                        pieceElement.dataset.piece = piece;
+                        squareElement.appendChild(pieceElement);
+                    }
+                    
+                    squareElement.classList.remove('selected');
+                    
+                    // Entferne alle möglichen Zug-Marker
+                    const existingMarkers = squareElement.querySelectorAll('.possible-move');
+                    existingMarkers.forEach(marker => marker.remove());
+                }
+            }
+        }
+        
+        // Event-Listener einrichten
+        function setupEventListeners() {
+            // Steuerungs-Buttons
+            document.getElementById('newGameBtn').addEventListener('click', startNewGame);
+            document.getElementById('resetBtn').addEventListener('click', startNewGame);
+            document.getElementById('flipBoardBtn').addEventListener('click', flipBoard);
+            document.getElementById('inviteBtn').addEventListener('click', inviteFriend);
+            
+            // Dropdown-Menüs
+            document.getElementById('botLevel').addEventListener('change', function() {
+                botLevel = parseInt(this.value);
+                addChatMessage("system", `Bot-Stärke auf ${this.options[this.selectedIndex].text} geändert.`);
+            });
+            
+            document.getElementById('playerColor').addEventListener('change', function() {
+                playerColor = this.value;
+                updatePlayerDisplay();
+                
+                if (!gameOver) {
+                    addChatMessage("system", `Du spielst jetzt als ${playerColor === 'white' ? 'Weiß' : 'Schwarz'}.`);
+                }
+            });
+            
+            // Chat-Funktionen
+            document.getElementById('sendBtn').addEventListener('click', sendChatMessage);
+            document.getElementById('chatInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendChatMessage();
+                }
+            });
+            
+            // Spielername abfragen
+            setTimeout(() => {
+                const name = prompt("Wie heißt du?", "Schachspieler");
+                if (name && name.trim() !== "") {
+                    playerName = name.trim();
+                    document.getElementById('whitePlayer').textContent = `${playerName} (Weiß)`;
+                    addChatMessage("system", `${playerName} ist dem Spiel beigetreten!`);
+                }
+            }, 1000);
+        }
+        
+        // Neues Spiel starten
+        function startNewGame() {
+            console.log("Starte neues Spiel...");
+            setupBoard();
+            currentPlayer = 'white';
+            selectedSquare = null;
+            possibleMoves = [];
+            gameHistory = [];
+            moveNotationHistory = [];
+            gameOver = false;
+            whiteTime = 600;
+            blackTime = 600;
+            updateBoardDisplay();
+            updateGameStatus();
+            updatePlayerDisplay();
+            updateTimerDisplay();
+            
+            document.getElementById('moveHistory').innerHTML = '';
+            addChatMessage("system", "Neues Spiel gestartet!");
+            
+            // Timer neu starten
+            clearInterval(timerInterval);
+            startTimer();
+            
+            // Wenn Spieler Schwarz ist, beginnt der Bot
+            if (playerColor === 'black') {
+                setTimeout(makeBotMove, 1000);
+            }
+        }
+        
+        // Klick auf ein Feld
+        function handleSquareClick(squareId, row, col) {
+            if (gameOver) return;
+            
+            const piece = board[row][col];
+            const isPlayerTurn = (currentPlayer === 'white' && playerColor === 'white') ||
+                                 (currentPlayer === 'black' && playerColor === 'black');
+            
+            // Wenn nicht der Spieler am Zug ist
+            if (!isPlayerTurn) {
+                addChatMessage("system", "Du bist nicht am Zug!");
+                return;
+            }
+            
+            // Wenn ein Feld bereits ausgewählt ist
+            if (selectedSquare) {
+                const [selRow, selCol] = selectedSquare;
+                
+                // Prüfe, ob das Klickfeld ein gültiger Zug ist
+                const moveIndex = possibleMoves.findIndex(move => 
+                    move.toRow === row && move.toCol === col);
+                
+                if (moveIndex !== -1) {
+                    // Zug ausführen
+                    const move = possibleMoves[moveIndex];
+                    makeMove(selRow, selCol, row, col, move.promotion);
+                    
+                    // Chat-Nachricht über den Zug
+                    const fromNotation = `${String.fromCharCode(97 + selCol)}${8 - selRow}`;
+                    const toNotation = `${String.fromCharCode(97 + col)}${8 - row}`;
+                    const pieceName = getPieceName(board[row][col]);
+                    addChatMessage("user", `Zug: ${pieceName} von ${fromNotation} nach ${toNotation}`);
+                    
+                    selectedSquare = null;
+                    possibleMoves = [];
+                    updateBoardDisplay();
+                    
+                    // Prüfe auf Spielende
+                    if (!gameOver) {
+                        setTimeout(makeBotMove, 800);
+                    }
+                    return;
+                }
+            }
+            
+            // Wenn auf eine eigene Figur geklickt wird
+            if (piece && isOwnPiece(piece)) {
+                selectedSquare = [row, col];
+                possibleMoves = getPossibleMoves(row, col, piece);
+                updateBoardDisplay();
+                
+                // Markiere ausgewähltes Feld
+                const squareElement = document.getElementById(squareId);
+                squareElement.classList.add('selected');
+                
+                // Zeige mögliche Züge an
+                possibleMoves.forEach(move => {
+                    const targetSquare = document.getElementById(
+                        `${String.fromCharCode(97 + move.toCol)}${8 - move.toRow}`
+                    );
+                    const marker = document.createElement('div');
+                    marker.className = 'possible-move';
+                    targetSquare.appendChild(marker);
+                });
+            } else {
+                selectedSquare = null;
+                possibleMoves = [];
+                updateBoardDisplay();
+            }
+        }
+        
+        // Prüfe, ob es eine eigene Figur ist
+        function isOwnPiece(piece) {
+            if (playerColor === 'white') {
+                return piece === piece.toUpperCase(); // Weiße Figuren sind groß
+            } else {
+                return piece === piece.toLowerCase(); // Schwarze Figuren sind klein
+            }
+        }
+        
+        // Mögliche Züge für eine Figur berechnen (verbessert)
+        function getPossibleMoves(row, col, piece) {
+            const moves = [];
+            const isWhite = piece === piece.toUpperCase();
+            
+            // Bauern
+            if (piece.toLowerCase() === 'p') {
+                const direction = isWhite ? -1 : 1;
+                const startRow = isWhite ? 6 : 1;
+                
+                // Ein Feld vorwärts
+                if (row + direction >= 0 && row + direction < 8) {
+                    if (!board[row + direction][col]) {
+                        // Bauernumwandlung prüfen
+                        const promotionRow = isWhite ? 0 : 7;
+                        if (row + direction === promotionRow) {
+                            // Alle Umwandlungsoptionen
+                            ['q', 'r', 'b', 'n'].forEach(promo => {
+                                moves.push({
+                                    toRow: row + direction, 
+                                    toCol: col,
+                                    promotion: promo
+                                });
+                            });
+                        } else {
+                            moves.push({toRow: row + direction, toCol: col});
+                            
+                            // Zwei Felder vorwärts von Startposition
+                            if (row === startRow && !board[row + 2 * direction][col]) {
+                                moves.push({toRow: row + 2 * direction, toCol: col});
+                            }
+                        }
+                    }
+                }
+                
+                // Schlagen diagonal
+                for (const dc of [-1, 1]) {
+                    const newRow = row + direction;
+                    const newCol = col + dc;
+                    
+                    if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+                        const targetPiece = board[newRow][newCol];
+                        if (targetPiece && isWhite !== (targetPiece === targetPiece.toUpperCase())) {
+                            // Bauernumwandlung beim Schlagen
+                            const promotionRow = isWhite ? 0 : 7;
+                            if (newRow === promotionRow) {
+                                ['q', 'r', 'b', 'n'].forEach(promo => {
+                                    moves.push({
+                                        toRow: newRow, 
+                                        toCol: newCol,
+                                        promotion: promo
+                                    });
+                                });
+                            } else {
+                                moves.push({toRow: newRow, toCol: newCol});
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Turm
+            if (piece.toLowerCase() === 'r') {
+                const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+                for (const [dr, dc] of directions) {
+                    let r = row + dr, c = col + dc;
+                    while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+                        if (!board[r][c]) {
+                            moves.push({toRow: r, toCol: c});
+                        } else {
+                            if (isWhite !== (board[r][c] === board[r][c].toUpperCase())) {
+                                moves.push({toRow: r, toCol: c});
+                            }
+                            break;
+                        }
+                        r += dr;
+                        c += dc;
+                    }
+                }
+            }
+            
+            // Springer
+            if (piece.toLowerCase() === 'n') {
+                const knightMoves = [
+                    [-2, -1], [-2, 1], [-1, -2], [-1, 2],
+                    [1, -2], [1, 2], [2, -1], [2, 1]
+                ];
+                for (const [dr, dc] of knightMoves) {
+                    const r = row + dr, c = col + dc;
+                    if (r >= 0 && r < 8 && c >= 0 && c < 8) {
+                        const targetPiece = board[r][c];
+                        if (!targetPiece || isWhite !== (targetPiece === targetPiece.toUpperCase())) {
+                            moves.push({toRow: r, toCol: c});
+                        }
+                    }
+                }
+            }
+            
+            // Läufer
+            if (piece.toLowerCase() === 'b') {
+                const directions = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+                for (const [dr, dc] of directions) {
+                    let r = row + dr, c = col + dc;
+                    while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+                        if (!board[r][c]) {
+                            moves.push({toRow: r, toCol: c});
+                        } else {
+                            if (isWhite !== (board[r][c] === board[r][c].toUpperCase())) {
+                                moves.push({toRow: r, toCol: c});
+                            }
+                            break;
+                        }
+                        r += dr;
+                        c += dc;
+                    }
+                }
+            }
+            
+            // Dame (Kombination aus Turm und Läufer)
+            if (piece.toLowerCase() === 'q') {
+                const directions = [
+                    [-1, 0], [1, 0], [0, -1], [0, 1],
+                    [-1, -1], [-1, 1], [1, -1], [1, 1]
+                ];
+                
+                for (const [dr, dc] of directions) {
+                    let r = row + dr, c = col + dc;
+                    while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+                        if (!board[r][c]) {
+                            moves.push({toRow: r, toCol: c});
+                        } else {
+                            if (isWhite !== (board[r][c] === board[r][c].toUpperCase())) {
+                                moves.push({toRow: r, toCol: c});
+                            }
+                            break;
+                        }
+                        r += dr;
+                        c += dc;
+                    }
+                }
+            }
+            
+            // König
+            if (piece.toLowerCase() === 'k') {
+                const kingMoves = [
+                    [-1, -1], [-1, 0], [-1, 1],
+                    [0, -1], [0, 1],
+                    [1, -1], [1, 0], [1, 1]
+                ];
+                for (const [dr, dc] of kingMoves) {
+                    const r = row + dr, c = col + dc;
+                    if (r >= 0 && r < 8 && c >= 0 && c < 8) {
+                        const targetPiece = board[r][c];
+                        if (!targetPiece || isWhite !== (targetPiece === targetPiece.toUpperCase())) {
+                            moves.push({toRow: r, toCol: c});
+                        }
+                    }
+                }
+                
+                // Rochade (vereinfacht)
+                if (row === (isWhite ? 7 : 0) && col === 4) {
+                    // Kurze Rochade
+                    if (!board[row][5] && !board[row][6] && 
+                        board[row][7] && board[row][7].toLowerCase() === 'r') {
+                        moves.push({toRow: row, toCol: 6, isCastle: true});
+                    }
+                    // Lange Rochade
+                    if (!board[row][1] && !board[row][2] && !board[row][3] &&
+                        board[row][0] && board[row][0].toLowerCase() === 'r') {
+                        moves.push({toRow: row, toCol: 2, isCastle: true});
+                    }
+                }
+            }
+            
+            return moves;
+        }
+        
+        // Zug ausführen
+        function makeMove(fromRow, fromCol, toRow, toCol, promotion = 'q') {
+            const piece = board[fromRow][fromCol];
+            const capturedPiece = board[toRow][toCol];
+            
+            // Zug speichern
+            gameHistory.push({
+                from: [fromRow, fromCol],
+                to: [toRow, toCol],
+                piece: piece,
+                captured: capturedPiece,
+                promotion: promotion
+            });
+            
+            // Zug ausführen
+            board[toRow][toCol] = piece;
+            board[fromRow][fromCol] = '';
+            
+            // Bauernumwandlung
+            if (piece.toLowerCase() === 'p') {
+                const promotionRow = (piece === piece.toUpperCase()) ? 0 : 7;
+                if (toRow === promotionRow) {
+                    const promotedPiece = promotion.toUpperCase();
+                    board[toRow][toCol] = piece === piece.toUpperCase() ? promotedPiece : promotedPiece.toLowerCase();
+                }
+            }
+            
+            // Rochade (vereinfacht)
+            if (piece.toLowerCase() === 'k' && Math.abs(fromCol - toCol) === 2) {
+                // Kurze Rochade
+                if (toCol === 6) {
+                    const rookFromCol = 7;
+                    const rookToCol = 5;
+                    const rook = board[fromRow][rookFromCol];
+                    board[fromRow][rookToCol] = rook;
+                    board[fromRow][rookFromCol] = '';
+                }
+                // Lange Rochade
+                else if (toCol === 2) {
+                    const rookFromCol = 0;
+                    const rookToCol = 3;
+                    const rook = board[fromRow][rookFromCol];
+                    board[fromRow][rookToCol] = rook;
+                    board[fromRow][rookFromCol] = '';
+                }
+            }
+            
+            // Spielerwechsel
+            currentPlayer = currentPlayer === 'white' ? 'black' : 'white';
+            
+            // Zug zur Historie hinzufügen
+            const fromNotation = `${String.fromCharCode(97 + fromCol)}${8 - fromRow}`;
+            const toNotation = `${String.fromCharCode(97 + toCol)}${8 - toRow}`;
+            const pieceSymbol = getPieceSymbol(piece);
+            const moveNumber = Math.ceil(gameHistory.length / 2);
+            
+            let moveText = `${pieceSymbol}${fromNotation}-${toNotation}`;
+            if (capturedPiece) {
+                moveText = `${pieceSymbol}${fromNotation}x${toNotation}`;
+            }
+            
+            // Schach prüfen
+            if (isCheck()) {
+                moveText += '+';
+            }
+            
+            // Zur Zug-Historie hinzufügen
+            addMoveToHistory(moveNumber, moveText);
+            
+            // Schachmatt prüfen
+            if (isCheckmate()) {
+                gameOver = true;
+                moveText = moveText.replace('+', '#');
+                addChatMessage("system", `Schachmatt! ${currentPlayer === 'white' ? 'Schwarz' : 'Weiß'} gewinnt!`);
+            }
+            // Patt prüfen
+            else if (isStalemate()) {
+                gameOver = true;
+                addChatMessage("system", "Patt! Unentschieden!");
+            }
+            
+            updateGameStatus();
+            updatePlayerDisplay();
+        }
+        
+        // Bot-Zug
+        function makeBotMove() {
+            if (gameOver) return;
+            
+            // Bot-Nachricht im Chat
+            addChatMessage("bot", BOT_DESCRIPTIONS[botLevel]);
+            
+            // Verzögerung für Realismus
+            setTimeout(() => {
+                // Finde alle möglichen Züge für den Bot
+                const botMoves = [];
+                const botIsWhite = (playerColor === 'black');
+                
+                for (let row = 0; row < 8; row++) {
+                    for (let col = 0; col < 8; col++) {
+                        const piece = board[row][col];
+                        if (piece && ((botIsWhite && piece === piece.toUpperCase()) ||
+                                     (!botIsWhite && piece === piece.toLowerCase()))) {
+                            const moves = getPossibleMoves(row, col, piece);
+                            for (const move of moves) {
+                                // Bewerte jeden Zug
+                                const moveScore = evaluateMove(row, col, move.toRow, move.toCol, piece);
+                                botMoves.push({
+                                    fromRow: row,
+                                    fromCol: col,
+                                    toRow: move.toRow,
+                                    toCol: move.toCol,
+                                    piece: piece,
+                                    score: moveScore,
+                                    promotion: move.promotion || 'q'
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                if (botMoves.length > 0) {
+                    // Sortiere Züge nach Bewertung (je höher desto besser für Bot)
+                    botMoves.sort((a, b) => {
+                        // Je höher der Bot-Level, desto wichtiger die Bewertung
+                        const weight = botLevel * 0.5;
+                        return (b.score * weight + Math.random() * 2) - (a.score * weight + Math.random() * 2);
+                    });
+                    
+                    // Wähle einen der besten Züge
+                    const topMoves = Math.max(1, Math.floor(botMoves.length / (7 - botLevel)));
+                    const chosenMove = botMoves[Math.floor(Math.random() * topMoves)];
+                    
+                    // Führe den Bot-Zug aus
+                    makeMove(chosenMove.fromRow, chosenMove.fromCol, 
+                             chosenMove.toRow, chosenMove.toCol, 
+                             chosenMove.promotion);
+                    
+                    // Bot-Zug im Chat anzeigen
+                    const fromNotation = `${String.fromCharCode(97 + chosenMove.fromCol)}${8 - chosenMove.fromRow}`;
+                    const toNotation = `${String.fromCharCode(97 + chosenMove.toCol)}${8 - chosenMove.toRow}`;
+                    addChatMessage("bot", `Bot zieht von ${fromNotation} nach ${toNotation}`);
+                    
+                    updateBoardDisplay();
+                }
+            }, 1000 + botLevel * 300); // Bot denkt länger bei höheren Stufen
+        }
+        
+        // Bewertung eines Zuges
+        function evaluateMove(fromRow, fromCol, toRow, toCol, piece) {
+            let score = 0;
+            const targetPiece = board[toRow][toCol];
+            
+            // Materialwert
+            const pieceValues = {
+                'p': 1, 'n': 3, 'b': 3, 'r': 5, 'q': 9, 'k': 100
+            };
+            
+            // Figur schlagen
+            if (targetPiece) {
+                const targetValue = pieceValues[targetPiece.toLowerCase()] || 0;
+                const attackerValue = pieceValues[piece.toLowerCase()] || 0;
+                
+                // Wertvollerer Angriff = besserer Zug
+                if (targetValue > attackerValue) {
+                    score += targetValue * 2;
+                } else {
+                    score += targetValue;
+                }
+            }
+            
+            // Zentrumskontrolle
+            if ((toRow === 3 || toRow === 4) && (toCol === 3 || toCol === 4)) {
+                score += 0.5;
+            }
+            
+            // Entwicklungszüge
+            if (piece.toLowerCase() === 'p' && (fromRow === 1 || fromRow === 6)) {
+                score += 0.3;
+            }
+            
+            // Königssicherheit
+            if (piece.toLowerCase() === 'k' && (fromCol === 4 && Math.abs(fromCol - toCol) <= 1)) {
+                score -= 0.5; // König sollte in der Mitte bleiben
+            }
+            
+            return score;
+        }
+        
+        // Schach prüfen
+        function isCheck() {
+            // Vereinfachte Prüfung
+            return false;
+        }
+        
+        // Schachmatt prüfen
+        function isCheckmate() {
+            // Vereinfachte Prüfung
+            return false;
+        }
+        
+        // Patt prüfen
+        function isStalemate() {
+            // Vereinfachte Prüfung
+            return false;
+        }
+        
+        // Figurname für Chat
+        function getPieceName(piece) {
+            const names = {
+                'r': 'Turm', 'n': 'Springer', 'b': 'Läufer', 'q': 'Dame', 'k': 'König', 'p': 'Bauer',
+                'R': 'Turm', 'N': 'Springer', 'B': 'Läufer', 'Q': 'Dame', 'K': 'König', 'P': 'Bauer'
+            };
+            return names[piece] || 'Figur';
+        }
+        
+        // Figursymbol für Notation
+        function getPieceSymbol(piece) {
+            const symbols = {
+                'r': '', 'n': 'N', 'b': 'B', 'q': 'Q', 'k': 'K', 'p': '',
+                'R': '', 'N': 'N', 'B': 'B', 'Q': 'Q', 'K': 'K', 'P': ''
+            };
+            return symbols[piece] || '';
+        }
+        
+        // Zug zur Historie hinzufügen
+        function addMoveToHistory(moveNumber, move) {
+            const historyDiv = document.getElementById('moveHistory');
+            const moveEntry = document.createElement('div');
+            moveEntry.className = 'move-entry';
+            
+            // Finde den letzten Eintrag für diese Zugnummer
+            const existingEntry = Array.from(historyDiv.children)
+                .find(child => child.textContent.startsWith(`${moveNumber}.`));
+            
+            if (existingEntry && !existingEntry.textContent.includes('...')) {
+                // Füge schwarzen Zug zu bestehendem Eintrag hinzu
+                existingEntry.textContent += ` ${move}`;
+            } else {
+                // Erstelle neuen Eintrag
+                moveEntry.textContent = `${moveNumber}. ${move}`;
+                historyDiv.appendChild(moveEntry);
+            }
+            
+            historyDiv.scrollTop = historyDiv.scrollHeight;
+            moveNotationHistory.push(move);
+        }
+        
+        // Spielstatus aktualisieren
+        function updateGameStatus() {
+            let status = '';
+            
+            if (gameOver) {
+                status = '<i class="fas fa-flag-checkered"></i> Spiel beendet!';
+            } else {
+                const playerTurn = (currentPlayer === 'white' && playerColor === 'white') ||
+                                   (currentPlayer === 'black' && playerColor === 'black');
+                
+                if (playerTurn) {
+                    status = '<i class="fas fa-user"></i> Du bist am Zug';
+                } else {
+                    status = '<i class="fas fa-robot"></i> Bot denkt nach...';
+                }
+            }
+            
+            document.getElementById('gameStatus').innerHTML = status;
+        }
+        
+        // Spieleranzeige aktualisieren
+        function updatePlayerDisplay() {
+            // Aktualisiere Namen
+            if (playerColor === 'white') {
+                document.getElementById('whitePlayer').textContent = `${playerName} (Weiß)`;
+                document.getElementById('blackPlayer').textContent = `Bot (Schwarz)`;
+            } else {
+                document.getElementById('whitePlayer').textContent = `Bot (Weiß)`;
+                document.getElementById('blackPlayer').textContent = `${playerName} (Schwarz)`;
+            }
+            
+            // Aktualisiere Zugindikatoren
+            document.getElementById('whiteTurn').style.display = 
+                (currentPlayer === 'white') ? 'block' : 'none';
+            document.getElementById('blackTurn').style.display = 
+                (currentPlayer === 'black') ? 'block' : 'none';
+        }
+        
+        // Timer starten
+        function startTimer() {
+            clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                if (currentPlayer === 'white') {
+                    whiteTime--;
+                } else {
+                    blackTime--;
+                }
+                
+                updateTimerDisplay();
+                
+                // Zeit abgelaufen
+                if (whiteTime <= 0 || blackTime <= 0) {
+                    clearInterval(timerInterval);
+                    gameOver = true;
+                    addChatMessage("system", 
+                        `Zeit abgelaufen! ${whiteTime <= 0 ? 'Schwarz' : 'Weiß'} gewinnt!`);
+                    updateGameStatus();
+                }
+            }, 1000);
+        }
+        
+        // Timer-Anzeige aktualisieren
+        function updateTimerDisplay() {
+            const formatTime = (seconds) => {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            };
+            
+            document.getElementById('whiteTime').textContent = formatTime(whiteTime);
+            document.getElementById('blackTime').textContent = formatTime(blackTime);
+        }
+        
+        // Chat-Nachricht senden
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (message) {
+                addChatMessage("user", message);
+                input.value = '';
+                
+                // Bot-Antwort (simuliert)
+                if (message.toLowerCase().includes('hallo') || message.toLowerCase().includes('hi')) {
+                    setTimeout(() => {
+                        addChatMessage("bot", `Hallo ${playerName}! Viel Spaß beim Schachspielen!`);
+                    }, 1000);
+                } else if (message.toLowerCase().includes('danke')) {
+                    setTimeout(() => {
+                        addChatMessage("bot", `Gern geschehen! 😊`);
+                    }, 1000);
+                } else if (message.toLowerCase().includes('wie geht')) {
+                    setTimeout(() => {
+                        addChatMessage("bot", `Mir geht es gut, danke der Nachfrage! Ich bin bereit für eine neue Partie.`);
+                    }, 1000);
+                }
+            }
+        }
+        
+        // Chat-Nachricht hinzufügen
+        function addChatMessage(sender, text) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            
+            let senderName = sender;
+            let cssClass = '';
+            
+            switch(sender) {
+                case 'user':
+                    senderName = playerName;
+                    cssClass = 'user-message';
+                    break;
+                case 'bot':
+                    senderName = 'Bot';
+                    cssClass = 'bot-message';
+                    break;
+                default:
+                    senderName = 'System';
+                    cssClass = 'system-message';
+            }
+            
+            messageDiv.className = `message ${cssClass}`;
+            messageDiv.innerHTML = `<strong>${senderName}:</strong> ${text}`;
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Speichere Nachricht
+            chatMessages.push({sender, text, time: new Date()});
+        }
+        
+        // Brett drehen
+        function flipBoard() {
+            isFlipped = !isFlipped;
+            const boardElement = document.getElementById('chessBoard');
+            
+            if (isFlipped) {
+                boardElement.style.transform = 'rotate(180deg)';
+            } else {
+                boardElement.style.transform = 'rotate(0deg)';
+            }
+            
+            addChatMessage("system", `Brett wurde ${isFlipped ? 'gedreht' : 'zurückgedreht'}.`);
+        }
+        
+        // Freund einladen
+        function inviteFriend() {
+            const code = document.getElementById('roomCode').textContent;
+            addChatMessage("system", `Lade Freunde ein mit diesem Code: ${code}`);
+            alert(`Teile diesen Code mit Freunden: ${code}\n\nSie können sich dann über den Chat mit dir verbinden!`);
+        }
+        
+        // Raumcode aktualisieren
+        function updateRoomCode() {
+            document.getElementById('roomCode').textContent = roomCode;
+        }
+        
+        // Online-Aktivität simulieren
+        function simulateOnlineActivity() {
+            // Simuliere gelegentliche Chat-Nachrichten
+            const botMessages = [
+                "Tipp: Entwickle zuerst deine Leichtfiguren!",
+                "Die Rochade ist ein wichtiger Zug für die Königssicherheit.",
+                "Kontrolliere das Zentrum des Brettes!",
+                "Schach ist ein Spiel der Strategie und Geduld.",
+                "Versuche, deine Figuren zu koordinieren.",
+                "Ein Bauer im Zentrum ist oft stärker als am Rand."
+            ];
+            
+            setInterval(() => {
+                if (!gameOver && Math.random() > 0.7) {
+                    const randomMessage = botMessages[Math.floor(Math.random() * botMessages.length)];
+                    addChatMessage("bot", randomMessage);
+                }
+            }, 30000); // Alle 30 Sekunden
+            
+            // Simuliere Online-Spieler
+            setInterval(() => {
+                onlineCount = 1 + Math.floor(Math.random() * 3);
+                document.getElementById('onlineCount').textContent = onlineCount;
+            }, 15000);
+        }
+        
+        // Spiel starten, wenn Seite geladen ist
+        window.onload = initGame;
+    </script>
+</body>
+</html>
